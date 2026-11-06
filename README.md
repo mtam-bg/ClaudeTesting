@@ -24,7 +24,18 @@ anywhere.
 1. **Import sketch:** load the marked-up PDF (Archicad export with coloured
    lines), a PNG/JPG, or paste a screenshot with Ctrl+V. For multi-page PDFs,
    choose the page in *Sketch underlay*. Unlock the sketch to move or scale it.
-2. **Trace:** pick an element type (Core, Steel, Timber, Slab…) and a tool:
+2. **Auto-draw (optional):** position and scale the sketch so the drawing you
+   want fills the page, click **Auto-draw**, add notes such as
+   "green = timber, red = concrete", and choose bands or single lines. Claude
+   reads the sketch and draws it with the office element types, colours,
+   drawing tools and glossary, then lays the labels out in columns. The
+   result is ordinary editable elements: correct what it got wrong, or press
+   Ctrl+Z to remove it. The office drawing rules it follows are
+   `autoDrawRules` in `js/standards.js`.
+   - In the claude.ai version it uses the viewer's own Claude account.
+   - Anywhere else it needs an Anthropic API key, which is stored only in that
+     browser. The sketch image is sent to Anthropic.
+3. **Trace or correct by hand:** pick an element type (Core, Steel, Timber, Slab…) and a tool:
    | Key | Tool | Use |
    |---|---|---|
    | L | Line | single member; Shift = 0/45/90° |
@@ -39,11 +50,11 @@ anywhere.
 
    Set **Thickness** on lines, slabs and piles to draw a member as a filled
    band with an outline (the double-line look of the Haag diagrams).
-3. **Label:** choose the text from the glossary. It fills English and German at
+4. **Label:** choose the text from the glossary. It fills English and German at
    once. **EN / DE** in the top bar switches every label. **CAPS / Plain**
    switches between the two label styles. *Align all labels* puts the labels
    into one column.
-4. **Deliver:**
+5. **Deliver:**
    - **Export PDF** gives a vector A-format PDF with editable text (Helvetica).
    - **Export SVG** gives one named group per material and keeps the Roboto
      Condensed font name. Open it in Illustrator.

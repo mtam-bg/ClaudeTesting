@@ -164,7 +164,8 @@
     for (let i = 0; i < n; i++) {
       const x0 = x + i * pw, x1 = x0 + pw;
       if (i && pat !== 'warren') d += `M${f(x0)} ${f(y)}V${f(y + h)}`;
-      if (pat === 'pratt') d += (x0 + pw / 2 < x + w / 2) ? `M${f(x1)} ${f(y)}L${f(x0)} ${f(y + h)}` : `M${f(x0)} ${f(y)}L${f(x1)} ${f(y + h)}`;
+      // Pratt: diagonals run down towards mid-span
+      if (pat === 'pratt') d += (x0 + pw / 2 < x + w / 2) ? `M${f(x0)} ${f(y)}L${f(x1)} ${f(y + h)}` : `M${f(x1)} ${f(y)}L${f(x0)} ${f(y + h)}`;
       if (pat === 'warren') d += i % 2 ? `M${f(x0)} ${f(y + h)}L${f(x1)} ${f(y)}` : `M${f(x0)} ${f(y)}L${f(x1)} ${f(y + h)}`;
       if (pat === 'x') d += `M${f(x0)} ${f(y)}L${f(x1)} ${f(y + h)}M${f(x0)} ${f(y + h)}L${f(x1)} ${f(y)}`;
     }
@@ -375,7 +376,13 @@
   }
 
   function fileBase() { return (P.name || 'diagram').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'diagram'; }
+  let downloadsCap = null;
+  if (window.claude && window.claude.use) window.claude.use('downloads').then((d) => (downloadsCap = d)).catch(() => {});
   function download(blob, name) {
+    if (downloadsCap) {
+      downloadsCap.save({ filename: name, data: blob }).catch((e) => { if (e && e.code !== 'declined') toast('Could not save the file here (' + e.code + ').'); });
+      return;
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
@@ -501,6 +508,231 @@
     };
     r.readAsDataURL(file);
   }
+
+  // ------------------------------------------------------------------ auto-draw (sketch → diagram with Claude)
+  const AI_W = 1600; // the sketch image Claude sees is AI_W px wide; it answers in those pixels
+  const API_KEY_STORE = 'structural-diagrams.apikey';
+  let aiCtl = null;
+
+  /** Claude through claude.ai (when the app runs as a claude.ai page): null elsewhere. */
+  let samplePromise = null;
+  function getSample() {
+    if (!samplePromise) samplePromise = (window.claude && window.claude.use) ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+    return samplePromise;
+  }
+
+  /** Renders the page area with only the sketch on it (what Claude looks at). */
+  function sketchImage() {
+    return new Promise((res, rej) => {
+      const { w, h } = P.page, u = P.underlay;
+      const c = document.createElement('canvas');
+      c.width = AI_W; c.height = Math.round(AI_W * h / w);
+      const s = AI_W / w, ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, u.x * s, u.y * s, u.w * s, u.h * s);
+        c.toBlob((b) => (b ? res({ blob: b, w: c.width, h: c.height }) : rej(new Error('Could not render the sketch'))), 'image/jpeg', 0.9);
+      };
+      img.onerror = () => rej(new Error('Could not read the sketch image'));
+      img.src = sketchSrc;
+    });
+  }
+
+  function autoDrawPrompt(imgW, imgH, opts) {
+    const types = TYPE_ORDER.map((id) => `- ${id}: ${TYPES[id].name.en} / ${TYPES[id].name.de} (${TYPES[id].use || ''})`).join('\n');
+    const gloss = S.glossary.map((g) => `- ${g.id}: ${g.en.title} / ${g.de.title}${g.en.sub ? ' (' + g.en.sub.replace(/\n/g, '; ') + ')' : ''}`).join('\n');
+    const style = opts.bands
+      ? 'Draw slabs, beams and columns as members with a real thickness: set "thick" in pt (slabs and beams about 3, columns about 2.5, foundations 4-6).'
+      : 'Draw members as single lines: set "thick" to 0.';
+    return `You turn a structural engineer's competition sketch into a clean structural diagram for an architecture competition.
+
+The image is a ${imgW} x ${imgH} px sketch (often a CAD section or plan with coloured hand markings). Coordinates: x to the right, y DOWN, in image pixels. Work out what the marked structure is and redraw it as the clean, simplified elements below, positioned over the sketch.
+
+OFFICE RULES
+${S.autoDrawRules.map((r) => '- ' + r).join('\n')}
+- ${style}
+${opts.notes ? '\nNOTES FOR THIS SKETCH (from the engineer, follow them)\n' + opts.notes + '\n' : ''}
+ELEMENT TYPES (use the id in "type")
+${types}
+
+GLOSSARY (use the id in "glossary" when one fits)
+${gloss}
+
+ELEMENT KINDS
+- {"kind":"line","type":T,"pts":[[x,y],[x,y],...],"thick":N,"closed":false,"smooth":false}  any member or polyline; "smooth":true for curved shells; "closed":true for a filled outline shape
+- {"kind":"rect","type":T,"x":X,"y":Y,"w":W,"h":H,"infill":"none"|"x"|"zigzag"|"ladder","n":PANELS}  cores, walls, ground, foundations; infill for braced cores
+- {"kind":"floors","type":T,"x":X,"y":Y,"w":W,"h":H,"n":COUNT,"thick":N}  COUNT evenly spaced horizontal slabs from y to y+h
+- {"kind":"piles","type":T,"x":X,"y":Y,"w":W,"h":H,"n":COUNT,"thick":N}  COUNT evenly spaced vertical members from x to x+w (piles, or a row of columns)
+- {"kind":"truss","type":T,"x":X,"y":Y,"w":W,"h":H,"n":PANELS,"pattern":"pratt"|"warren"|"x"|"vierendeel"}
+
+LABELS: {"at":[x,y],"glossary":ID or null,"en":{"title":"...","sub":"..."},"de":{"title":"...","sub":"..."}}
+"at" is a point ON the labelled element. Text positions are laid out automatically; do not place text. "sub" is the material / description, lines separated by \\n, may be empty.
+
+Reply with only one JSON object, no other text:
+{"elements":[...],"labels":[...],"summary":"one or two sentences: what you drew and anything you were unsure about"}`;
+  }
+
+  async function askClaude(prompt, img, onProgress) {
+    const sample = await getSample();
+    if (sample) {
+      const lim = await sample.limits().catch(() => null);
+      if (!lim || !lim.images) throw new Error('This claude.ai view cannot send images to Claude.');
+      return sample.json(prompt, {
+        images: [img.blob], modelTier: 'complex', cache: false, signal: aiCtl.signal,
+        onText: ({ text }) => onProgress('Drawing… ' + Math.round(text.length / 100) / 10 + ' k characters received'),
+      });
+    }
+    let key = '';
+    try { key = localStorage.getItem(API_KEY_STORE) || ''; } catch (e) { /* storage unavailable */ }
+    const field = $('#ad-key');
+    if (field && field.value.trim()) key = field.value.trim();
+    if (!key) throw new Error('Enter an Anthropic API key to use Auto-draw outside claude.ai.');
+    try { localStorage.setItem(API_KEY_STORE, key); } catch (e) { /* ignore */ }
+    const b64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.readAsDataURL(img.blob); });
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal: aiCtl.signal,
+      headers: {
+        'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true', 'anthropic-beta': 'server-side-fallback-2026-07-01',
+      },
+      body: JSON.stringify({
+        model: S.autoDrawModel || 'claude-opus-5-5', max_tokens: 16000,
+        thinking: { type: 'adaptive' }, output_config: { effort: 'high' }, fallbacks: 'default',
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+          { type: 'text', text: prompt },
+        ] }],
+      }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error((data.error && data.error.message) || ('API error ' + resp.status));
+    if (data.stop_reason === 'refusal') throw new Error('Claude declined this sketch. Try a different crop or notes.');
+    const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Claude did not return a drawing. Try again.');
+    return JSON.parse(m[0]);
+  }
+
+  /** Converts Claude's answer (image pixels) into diagram items (page pt). Exposed for testing. */
+  function itemsFromAnswer(ans, imgW, opts) {
+    const k = P.page.w / imgW;
+    const num = (v, d = 0) => (isFinite(+v) ? +v : d);
+    const pt = (p) => [f(num(p[0]) * k), f(num(p[1]) * k)];
+    const typeOf = (t) => (TYPES[t] ? t : 'slab');
+    const out = [];
+    for (const e of (ans && ans.elements) || []) {
+      const type = typeOf(e.type);
+      const thick = opts.bands ? Math.max(0, Math.min(20, num(e.thick))) : 0;
+      if (e.kind === 'line' && Array.isArray(e.pts) && e.pts.length >= 2) {
+        out.push({ kind: 'path', type, pts: e.pts.filter(Array.isArray).map(pt), closed: !!e.closed, smooth: !!e.smooth, thick: e.closed ? 0 : thick });
+      } else if (RECT_KINDS.includes(e.kind)) {
+        const it = Object.assign({ kind: e.kind, type, x: f(num(e.x) * k), y: f(num(e.y) * k), w: f(Math.abs(num(e.w)) * k), h: f(Math.abs(num(e.h)) * k) }, defaultsFor(e.kind));
+        if (e.n) it.n = Math.max(1, Math.min(300, Math.round(num(e.n, it.n))));
+        if (e.kind === 'rect') it.infill = ['none', 'x', 'zigzag', 'ladder'].includes(e.infill) ? e.infill : 'none';
+        if (e.kind === 'truss') it.pattern = ['pratt', 'warren', 'x', 'vierendeel'].includes(e.pattern) ? e.pattern : 'pratt';
+        if (e.kind === 'floors' || e.kind === 'piles') it.thick = thick;
+        if (it.w > 0.5 || it.h > 0.5) out.push(it);
+      }
+    }
+    const labels = [];
+    for (const l of (ans && ans.labels) || []) {
+      if (!Array.isArray(l.at)) continue;
+      const g = S.glossary.find((x) => x.id === l.glossary);
+      const t = (o) => ({ title: String((o && o.title) || ''), sub: String((o && o.sub) || '') });
+      const text = g ? { en: clone(g.en), de: clone(g.de) } : { en: t(l.en), de: t(l.de) };
+      if (!text.en.title && !text.de.title) continue;
+      const [ax, ay] = pt(l.at);
+      labels.push({ kind: 'callout', ax, ay, lx: 0, ly: ay, leader: 'angled', key: g ? g.id : '', text });
+    }
+    layoutLabels(labels, out);
+    return out.concat(labels);
+  }
+
+  /** Puts labels in a column on each side of the drawing (or one on the right), in anchor order, without overlaps. */
+  function layoutLabels(labels, items) {
+    if (!labels.length) return;
+    let minX = Infinity, maxX = 0;
+    const span = (x) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); };
+    for (const it of items) {
+      if (it.type === 'ground') continue;
+      if (it.kind === 'path') it.pts.forEach((p) => span(p[0]));
+      else { span(it.x); span(it.x + it.w); }
+    }
+    labels.forEach((l) => span(l.ax));
+    const widthOf = (l) => calloutGeom(Object.assign({}, l, { lx: l.ax + 1 })).box.w;
+    const mid = (minX + maxX) / 2;
+    const leftGroup = labels.filter((l) => l.ax < mid), rightGroup = labels.filter((l) => l.ax >= mid);
+    const leftCol = minX - 40;
+    const twoSides = labels.length > 2 && leftGroup.length && leftCol - Math.max(...leftGroup.map(widthOf)) > 15;
+    const sides = twoSides ? [leftGroup, rightGroup] : [[], labels];
+    const rightCol = Math.min(maxX + 40, P.page.w - Math.max(0, ...sides[1].map(widthOf)) - 20);
+    sides.forEach((group, i) => {
+      group.sort((a, b) => a.ay - b.ay);
+      let prevBottom = -Infinity;
+      for (const l of group) {
+        l.lx = i === 0 ? leftCol : rightCol;
+        let g = calloutGeom(l);
+        if (g.box.y < prevBottom + 6) { l.ly += prevBottom + 6 - g.box.y; g = calloutGeom(l); }
+        prevBottom = g.box.y + g.box.h;
+      }
+      const overflow = prevBottom - (P.page.h - 20);
+      if (overflow > 0) group.forEach((l) => (l.ly -= overflow));
+    });
+  }
+
+  function openAutoDraw() {
+    if (!P.underlay || !sketchSrc) { toast('Import a sketch first, then position it on the page.'); $('#file-sketch').click(); return; }
+    renderAutoDraw();
+    $('#ad-dialog').hidden = false;
+  }
+  function closeAutoDraw() { if (aiCtl) aiCtl.abort(); $('#ad-dialog').hidden = true; }
+
+  async function renderAutoDraw() {
+    const inClaude = !!(await getSample());
+    let key = ''; try { key = localStorage.getItem(API_KEY_STORE) || ''; } catch (e) { /* ignore */ }
+    $('#ad-engine').innerHTML = inClaude
+      ? '<p class="hint">Uses your Claude account. The first run asks you to allow this page to send the sketch to Claude.</p>'
+      : `<div class="field"><label for="ad-key">Anthropic API key</label><input id="ad-key" type="password" value="${esc(key)}" placeholder="sk-ant-…" autocomplete="off"></div>
+         <p class="hint">Stored only in this browser. The sketch image is sent to Anthropic's API.</p>`;
+    $('#ad-notes').value = P.autoNotes || '';
+    $('#ad-replace').checked = P.items.some((i) => i.kind !== 'legend' && i.kind !== 'text');
+    $('#ad-status').textContent = '';
+  }
+
+  async function runAutoDraw() {
+    const opts = { notes: $('#ad-notes').value.trim(), bands: $('#ad-style').value === 'bands', replace: $('#ad-replace').checked };
+    P.autoNotes = opts.notes; persist();
+    const status = $('#ad-status'), btn = $('#ad-run');
+    aiCtl = new AbortController();
+    btn.disabled = true; status.textContent = 'Looking at the sketch… this usually takes 30 seconds to 2 minutes.';
+    try {
+      const img = await sketchImage();
+      const ans = await askClaude(autoDrawPrompt(img.w, img.h, opts), img, (m) => (status.textContent = m));
+      const items = itemsFromAnswer(ans, img.w, opts);
+      if (!items.length) throw new Error('Claude found no structure to draw. Add notes (e.g. which colours mean what) and try again.');
+      checkpoint();
+      if (opts.replace) P.items = P.items.filter((i) => i.kind === 'legend' || i.kind === 'text');
+      items.forEach(addItem);
+      if (!P.items.some((i) => i.kind === 'legend')) addItem({ kind: 'legend', x: 30, y: P.page.h - 30 - 18 * usedTypes().length });
+      ui.sel = null; renderAll(); persist();
+      $('#ad-dialog').hidden = true;
+      toast(`Drew ${items.length} elements. ${ans.summary ? String(ans.summary).slice(0, 220) : ''} Undo (Ctrl+Z) removes it.`);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'cancelled' || (e && e.name === 'AbortError')) status.textContent = 'Stopped.';
+      else if (code === 'not_granted' || code === 'sampling_disabled') status.textContent = 'Claude is not allowed for this page. Allow it in the page permissions to use Auto-draw.';
+      else if (code === 'rate_limited') status.textContent = 'Too many requests right now. Wait a moment and try again.';
+      else if (code === 'invalid_json') status.textContent = 'Claude\'s answer could not be read as a drawing. Try again.';
+      else status.textContent = (e && e.message) || 'Auto-draw failed.';
+      console.error(e);
+    } finally { btn.disabled = false; aiCtl = null; }
+  }
+
+  $('#btn-auto').addEventListener('click', openAutoDraw);
+  $('#ad-close').addEventListener('click', closeAutoDraw);
+  $('#ad-run').addEventListener('click', runAutoDraw);
+  window.__autoDrawTest = { image: async () => { const i = await sketchImage(); return await new Promise((r) => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(i.blob); }); }, itemsFromAnswer: (ans, w, o) => itemsFromAnswer(ans, w, o || { bands: true }), autoDrawPrompt, apply: (items) => { checkpoint(); P.items = []; items.forEach(addItem); renderAll(); } };
 
   // ------------------------------------------------------------------ view
   function fitView() {

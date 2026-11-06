@@ -42,21 +42,21 @@ window.STANDARDS = {
    *                   like the double-line members in the Haag diagrams.
    */
   types: {
-    existing:       { name: { en: "Existing building", de: "Bestand" },      stroke: "#a0a0a0", fill: "#f2f2f2", width: 0.75, swatch: "#d6d6d6", dash: "4 2" },
-    ground:         { name: { en: "Ground",          de: "Erdreich" },        stroke: "#cfcfcf", fill: "#e9e9e9", width: 0.5,  swatch: "#e9e9e9" },
-    pile:           { name: { en: "Piles",           de: "Pfähle" },          stroke: "#b9b9b9", fill: "none",    width: 3,    swatch: "#b9b9b9" },
-    foundation:     { name: { en: "Foundation",      de: "Gründung" },        stroke: "#555555", fill: "#666666", width: 0.5,  swatch: "#666666" },
-    concrete:       { name: { en: "Concrete",        de: "Beton" },           stroke: "#6e6e6e", fill: "#ededed", width: 1,    swatch: "#ededed", band: { fill: "#c8c8c8", outline: "#6e6e6e" } },
-    slab:           { name: { en: "Slab",            de: "Decke" },           stroke: "#5a5a5a", fill: "none",    width: 2,    swatch: "#5a5a5a", cap: "butt", band: { fill: "#c8c8c8", outline: "#6e6e6e" } },
-    envelope:       { name: { en: "Building outline",de: "Gebäudeumriss" },   stroke: "#8c8c8c", fill: "none",    width: 0.6,  swatch: "#bdbdbd", dash: "2 2" },
-    cladding:       { name: { en: "Steel envelope",  de: "Stahlhülle" },      stroke: "#5b5be8", fill: "#e4e4fa", width: 0.6,  swatch: "#c9c9f5" },
-    timber:         { name: { en: "Timber",          de: "Holz" },            stroke: "#e38b12", fill: "none",    width: 2,    swatch: "#f39200", band: { fill: "#f39200", outline: "#6e6e6e" } },
-    column:         { name: { en: "Column",          de: "Stütze" },          stroke: "#f6b13a", fill: "none",    width: 1.5,  swatch: "#fbb42f", band: { fill: "#fbb42f", outline: "#6e6e6e" } },
-    column_thick:   { name: { en: "Column Thick",    de: "Stütze stark" },    stroke: "#f08a1c", fill: "none",    width: 2.5,  swatch: "#f7810f", band: { fill: "#f7810f", outline: "#6e6e6e" } },
-    steel_light:    { name: { en: "Light steel",     de: "Leichtstahl" },     stroke: "#3c64d8", fill: "none",    width: 0.75, swatch: "#6f8fe6" },
-    steel:          { name: { en: "Steel",           de: "Stahl" },           stroke: "#1f4fb8", fill: "none",    width: 2,    swatch: "#1e88e5", cap: "round", band: { fill: "#6f9be8", outline: "#1f4fb8" } },
-    core_secondary: { name: { en: "Core (behind)",   de: "Kern (dahinter)" }, stroke: "#e8302d", fill: "#f9dada", width: 1,    swatch: "#f9dada", dash: "3 2" },
-    core:           { name: { en: "Core",            de: "Kern" },            stroke: "#e8302d", fill: "#f7bdbd", width: 2,    swatch: "#ff0000" },
+    existing:       { name: { en: "Existing building", de: "Bestand" }, use: "existing buildings that stay (Bestand)",      stroke: "#a0a0a0", fill: "#f2f2f2", width: 0.75, swatch: "#d6d6d6", dash: "4 2" },
+    ground:         { name: { en: "Ground",          de: "Erdreich" }, use: "soil / terrain below ground level, drawn as a large filled area",        stroke: "#cfcfcf", fill: "#e9e9e9", width: 0.5,  swatch: "#e9e9e9" },
+    pile:           { name: { en: "Piles",           de: "Pfähle" }, use: "piles, barrettes, caissons below foundations",          stroke: "#b9b9b9", fill: "none",    width: 3,    swatch: "#b9b9b9" },
+    foundation:     { name: { en: "Foundation",      de: "Gründung" }, use: "raft slabs, footings, pile caps",        stroke: "#555555", fill: "#666666", width: 0.5,  swatch: "#666666" },
+    concrete:       { name: { en: "Concrete",        de: "Beton" }, use: "solid concrete walls / basement boxes shown as filled areas",           stroke: "#6e6e6e", fill: "#ededed", width: 1,    swatch: "#ededed", band: { fill: "#c8c8c8", outline: "#6e6e6e" } },
+    slab:           { name: { en: "Slab",            de: "Decke" }, use: "floor and roof slabs (concrete or generic)",           stroke: "#5a5a5a", fill: "none",    width: 2,    swatch: "#5a5a5a", cap: "butt", band: { fill: "#c8c8c8", outline: "#6e6e6e" } },
+    envelope:       { name: { en: "Building outline",de: "Gebäudeumriss" }, use: "building outline / facade line for context, dashed",   stroke: "#8c8c8c", fill: "none",    width: 0.6,  swatch: "#bdbdbd", dash: "2 2" },
+    cladding:       { name: { en: "Steel envelope",  de: "Stahlhülle" }, use: "lightweight steel envelope or shell surface (filled area)",      stroke: "#5b5be8", fill: "#e4e4fa", width: 0.6,  swatch: "#c9c9f5" },
+    timber:         { name: { en: "Timber",          de: "Holz" }, use: "timber columns, beams, roofs, timber-concrete composite members",            stroke: "#e38b12", fill: "none",    width: 2,    swatch: "#f39200", band: { fill: "#f39200", outline: "#6e6e6e" } },
+    column:         { name: { en: "Column",          de: "Stütze" }, use: "regular columns",          stroke: "#f6b13a", fill: "none",    width: 1.5,  swatch: "#fbb42f", band: { fill: "#fbb42f", outline: "#6e6e6e" } },
+    column_thick:   { name: { en: "Column Thick",    de: "Stütze stark" }, use: "heavily loaded / transfer / lobby columns",    stroke: "#f08a1c", fill: "none",    width: 2.5,  swatch: "#f7810f", band: { fill: "#f7810f", outline: "#6e6e6e" } },
+    steel_light:    { name: { en: "Light steel",     de: "Leichtstahl" }, use: "secondary steel, diagrids, light framing",     stroke: "#3c64d8", fill: "none",    width: 0.75, swatch: "#6f8fe6" },
+    steel:          { name: { en: "Steel",           de: "Stahl" }, use: "primary steel: trusses, girders, steel columns, exoskeleton",           stroke: "#1f4fb8", fill: "none",    width: 2,    swatch: "#1e88e5", cap: "round", band: { fill: "#6f9be8", outline: "#1f4fb8" } },
+    core_secondary: { name: { en: "Core (behind)",   de: "Kern (dahinter)" }, use: "cores that lie behind the section plane", stroke: "#e8302d", fill: "#f9dada", width: 1,    swatch: "#f9dada", dash: "3 2" },
+    core:           { name: { en: "Core",            de: "Kern" }, use: "concrete or braced cores, shear walls (main lateral system)",            stroke: "#e8302d", fill: "#f7bdbd", width: 2,    swatch: "#ff0000" },
   },
 
   /*
@@ -189,6 +189,20 @@ window.STANDARDS = {
     { id: "existing_building", group: "Existing",
       en: { title: "Existing Building", sub: "" },
       de: { title: "Bestandsgebäude", sub: "" } },
+  ],
+
+  /*
+   * Auto-draw: rules Claude follows when it turns a sketch into a diagram.
+   * Write them like a brief to a new colleague. Sketch-specific notes
+   * (e.g. "green = timber") are typed in the Auto-draw dialog instead.
+   */
+  autoDrawRules: [
+    "Draw only the primary load-bearing structure: slabs, columns, walls, cores, trusses, foundations, piles. Leave out furniture, cars, people, dimensions, text, hatching and grid lines.",
+    "Straighten and tidy the hand-drawn lines: horizontal slabs, vertical columns, aligned column grids, regular spacing.",
+    "Use one 'floors' element for a stack of evenly spaced slabs and one 'piles' element for a row of evenly spaced columns or piles, instead of many single lines.",
+    "Cores and shear walls are 'rect' elements of type core; trusses are 'truss' elements.",
+    "Show the ground as one 'rect' of type ground below ground level when the sketch shows terrain or a basement.",
+    "Give each distinct structural element one label, with the anchor dot ON the element. Prefer glossary entries; otherwise write a short title and material line in both English and German.",
   ],
 
   // Page presets in pt (landscape values, portrait is derived).

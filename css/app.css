@@ -11,6 +11,7 @@
   --font-ui: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
   display: grid;
@@ -132,3 +133,17 @@ button:disabled { opacity: .4; cursor: default; }
   .topbar { overflow-x: auto; }
   .panel { border-left: 0; border-top: 1px solid var(--line); }
 }
+
+/* ---------- auto-draw dialog ---------- */
+button.ai { background: var(--accent); border-color: var(--accent) !important; color: #fff; }
+button.ai:hover { background: #c82522 !important; }
+.dialog-back { position: fixed; inset: 0; background: rgba(20, 20, 18, .35); display: grid; place-items: center; z-index: 20; padding: 16px; }
+.dialog { background: var(--chrome); border: 1px solid var(--line); border-radius: 8px; width: min(520px, 100%); max-height: 100%; overflow: auto; padding: 18px 20px; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+.dialog h2 { margin: 0 0 6px; font-size: 18px; font-weight: 500; }
+.dialog textarea, .dialog input[type=password], .dialog select { width: 100%; border: 1px solid var(--line); border-radius: 4px; background: #fff; padding: 5px 7px; }
+.dialog .row select { width: auto; flex: 1; }
+.dialog button { border: 1px solid var(--line); background: #fff; border-radius: 4px; padding: 5px 14px; cursor: pointer; }
+.btns.end { justify-content: flex-end; }
+#ad-status { min-height: 1.3em; }
+.dialog button.primary { background: var(--fg); border-color: var(--fg); color: #fff; }
+.dialog button.primary:hover { background: #000; }

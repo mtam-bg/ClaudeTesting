@@ -35,7 +35,8 @@
   </div>
   <div class="spacer"></div>
   <div class="group">
-    <button id="btn-sketch" title="Import a sketch as tracing underlay (or paste an image)">Import sketch</button>
+    <button id="btn-sketch" title="Import a sketch as tracing underlay (PDF or image, or paste an image)">Import sketch</button>
+    <button id="btn-auto" class="ai" title="Let Claude draw the structure from the sketch, using the office standards">Auto-draw</button>
     <button id="btn-copy" title="Copy SVG to clipboard: paste straight into Illustrator">Copy for Illustrator</button>
     <button id="btn-svg">Export SVG</button>
     <button id="btn-pdf" class="primary">Export PDF</button>
@@ -77,6 +78,23 @@
 <input type="file" id="file-open" accept=".json,application/json" hidden>
 <input type="file" id="file-sketch" accept="image/*,application/pdf,.pdf" hidden>
 <div id="toast" class="toast" hidden></div>
+
+<div id="ad-dialog" class="dialog-back" hidden>
+  <div class="dialog" role="dialog" aria-labelledby="ad-title">
+    <h2 id="ad-title">Auto-draw from sketch</h2>
+    <p class="hint">Claude reads the sketch as it sits on the page and draws the structure with the office element types, colours and glossary. Position and scale the sketch first: only the part on the page is used.</p>
+    <div class="field">
+      <label for="ad-notes">Notes for this sketch</label>
+      <textarea id="ad-notes" rows="4" placeholder="e.g. Section through the school extension. Green = timber (columns, roof, TCC slabs), red = concrete (slabs, V-columns, foundations). Labels in German."></textarea>
+    </div>
+    <div class="row"><label for="ad-style">Members</label>
+      <select id="ad-style"><option value="bands">Bands with outline</option><option value="lines">Single lines</option></select></div>
+    <label class="check"><input type="checkbox" id="ad-replace"> Replace the current drawing (title and legend stay)</label>
+    <div id="ad-engine"></div>
+    <p id="ad-status" class="hint" aria-live="polite"></p>
+    <div class="btns end"><button id="ad-close">Close</button><button id="ad-run" class="primary">Draw</button></div>
+  </div>
+</div>
 
 <script src="js/standards.js"></script>
 <script src="js/app.js"></script>
