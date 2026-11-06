@@ -4,6 +4,10 @@ A browser app for drawing structural diagrams for competitions in the office
 style, starting from a sketch, with labels in English or German. It is
 plain HTML and JavaScript: there is no build step and no server code.
 
+![Example diagram in the editor](docs/screenshot-example.png)
+
+![German labels with a PDF sketch underneath](docs/screenshot-sketch-de.png)
+
 ## Run it
 
 - **Locally:** open `index.html` in Chrome or Edge, or run
