@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Structural Diagrams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V6l8-3 8 3v14" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 11h16M4 16h16M12 3v17" stroke="currentColor" stroke-width="1.2"/></svg>
+    <input id="project-name" class="name" value="Untitled diagram" aria-label="Project name" spellcheck="false">
+  </div>
+  <div class="group">
+    <button id="btn-new" title="New diagram">New</button>
+    <button id="btn-open" title="Open a saved .sdiag.json project">Open</button>
+    <button id="btn-save" title="Save project as .sdiag.json (Ctrl+S)">Save</button>
+  </div>
+  <div class="group">
+    <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="btn-redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+  </div>
+  <div class="group" role="group" aria-label="Annotation language">
+    <span class="lbl">Labels</span>
+    <div class="seg" id="seg-lang">
+      <button data-lang="en">EN</button><button data-lang="de">DE</button>
+    </div>
+    <div class="seg" id="seg-style" title="Label style">
+      <button data-style="caps">CAPS</button><button data-style="plain">Plain</button>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="group">
+    <button id="btn-sketch" title="Import a sketch as tracing underlay (or paste an image)">Import sketch</button>
+    <button id="btn-copy" title="Copy SVG to clipboard: paste straight into Illustrator">Copy for Illustrator</button>
+    <button id="btn-svg">Export SVG</button>
+    <button id="btn-pdf" class="primary">Export PDF</button>
+  </div>
+</header>
+
+<nav class="toolbar" id="toolbar" aria-label="Tools"></nav>
+
+<main class="stage" id="stage">
+  <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="zoom">
+    <button id="zoom-out" title="Zoom out">−</button>
+    <button id="zoom-fit" title="Fit page (0)">Fit</button>
+    <button id="zoom-in" title="Zoom in">+</button>
+  </div>
+</main>
+
+<aside class="panel" id="panel">
+  <section>
+    <h3>Element type</h3>
+    <div id="type-list" class="types"></div>
+  </section>
+  <section id="sel-section">
+    <h3 id="sel-title">Selection</h3>
+    <div id="sel-body"></div>
+  </section>
+  <section>
+    <h3>Sketch underlay</h3>
+    <div id="underlay-body"></div>
+  </section>
+  <section>
+    <h3>Page</h3>
+    <div id="page-body"></div>
+  </section>
+</aside>
+
+<footer class="status" id="status"></footer>
+
+<input type="file" id="file-open" accept=".json,application/json" hidden>
+<input type="file" id="file-sketch" accept="image/*,application/pdf,.pdf" hidden>
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/standards.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
